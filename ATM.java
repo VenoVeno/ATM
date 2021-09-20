@@ -1,3 +1,5 @@
+package ATM;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -6,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-public class Veno_MSc {
-    public static class ATM {
+public class ATM {
+    public static class ATMMachine {
         // TOTAL AMOUNT AVAILABLE IN ATM
         private int amount = 0;
 
@@ -26,7 +28,7 @@ public class Veno_MSc {
 
         // TO INITIALISE DENOMINATION AND ITS COUNT
         // ALSO TO UPDATE INITIAL ATM AMOUNT TOTAL
-        public ATM() {
+        public ATMMachine() {
             this.denomination.put(1000, 20);
             this.denomination.put(500, 100);
             this.denomination.put(100, 300);
@@ -267,6 +269,19 @@ public class Veno_MSc {
             return null;
         }
 
+        public int getPinNumber(int accountNumber) {
+            if (this.miniStatement.get(accountNumber) == null)
+                return 0;
+            else {
+                for (int i = 0; i < this.customerDetailss.length; i++) {
+                    if (this.customerDetailss[i].accountNumber == accountNumber)
+                        return customerDetailss[i].pin;
+                }
+            }
+
+            return 0;
+        }
+
         public int getAccountBalance(int accountNumber) {
             // if (this.customerDetails.get(accountNumber) == null)
             // return null;
@@ -298,7 +313,7 @@ public class Veno_MSc {
         }
 
         // WITHDRAW FUNCTION
-        public String withDraw(ATM atm, int accountNumber, int withdrawAmount) {
+        public String withDraw(ATMMachine atm, int accountNumber, int withdrawAmount) {
             if (withdrawAmount < atm.minWithdrawLimit || withdrawAmount > atm.maxWithdrawLimit)
                 return "Not within the Range of Withdrawal Limit";
 
@@ -329,7 +344,7 @@ public class Veno_MSc {
         }
 
         // TRANSFER TO CUSTOMER
-        public String transfer(ATM atm, int senderAccountNumber, int receiverAccountNumber, int transferAmount) {
+        public String transfer(ATMMachine atm, int senderAccountNumber, int receiverAccountNumber, int transferAmount) {
             if (transferAmount < atm.minTransferLimit || transferAmount > atm.maxTransferLimit)
                 return "Not within the Range of Transfer Limit";
 
@@ -339,35 +354,39 @@ public class Veno_MSc {
             else if (getCustomerName(receiverAccountNumber) == null)
                 return "Invalid Receiver Account";
 
+            else if (senderAccountNumber == receiverAccountNumber)
+                return "Sender Account and Receiver Account cannot be the Same";
+
             else {
+                // SENDER UPDATION
                 int senderBalance = this.getAccountBalance(senderAccountNumber);
                 senderBalance -= transferAmount;
-
-                int receiverBalance = this.getAccountBalance(receiverAccountNumber);
-                receiverBalance += transferAmount;
 
                 // UPDATE ACCOUNT BALANCE FOR SENDER
                 this.updateAccountBalance(senderAccountNumber, senderBalance);
 
                 // UPDATE RECEIPT FOR SENDER
-                // int transactionId = this.miniStatement.get(senderAccountNumber).size() + 1;
                 int transactionId = getTransactionIdInvoice(senderAccountNumber);
 
                 this.updateMiniStatement(senderAccountNumber, Arrays.asList(transactionId,
                         "Funds transfer to Acc" + receiverAccountNumber, "Debit", transferAmount));
 
+                // this.displayMiniStatement(senderAccountNumber);
+
+                // RECEIVER UPDATION
+                int receiverBalance = this.getAccountBalance(receiverAccountNumber);
+                receiverBalance += transferAmount;
+
                 // UPDATE ACCOUNT BALANCE FOR RECEIVER
                 this.updateAccountBalance(receiverAccountNumber, receiverBalance);
 
                 // UPDATE RECEIPT FOR RECEIVER
-                // transactionId = this.miniStatement.get(receiverAccountNumber).size() + 1;
                 transactionId = getTransactionIdInvoice(receiverAccountNumber);
 
                 this.updateMiniStatement(receiverAccountNumber, Arrays.asList(transactionId,
                         "Funds transfer from Acc" + senderAccountNumber, "Credit", transferAmount));
 
-                this.displayMiniStatement(senderAccountNumber, 101);
-                this.displayMiniStatement(receiverAccountNumber, 101);
+                // this.displayMiniStatement(receiverAccountNumber);
 
                 return "Transfer Successfull";
             }
@@ -386,9 +405,9 @@ public class Veno_MSc {
 
         // UPDATE MINI STATEMENT
         public void updateMiniStatement(int accountNumber, List<Object> list) {
-            System.out.println(this.miniStatement);
-            System.out.println(list);
-            System.out.println(accountNumber);
+            // System.out.println(this.miniStatement);
+            // System.out.println(list);
+            // System.out.println(accountNumber);
 
             // System.out.println(this.miniStatement.get(accountNumber));
 
@@ -397,17 +416,25 @@ public class Veno_MSc {
                 this.miniStatement.put(accountNumber, new ArrayList<List<Object>>(Arrays.asList()));
 
             // HAVE ONLY THE LAST 5 TRANSACTION
-            if (this.miniStatement.get(accountNumber).size() > 5) {
+            if (this.miniStatement.get(accountNumber).size() >= 5) {
                 this.miniStatement.get(accountNumber).remove(0);
             }
 
             // ADD THE CURRENT STATEMENT INFO TO THE MINI-STATEMENT
             this.miniStatement.get(accountNumber).add(list);
 
-            this.displayMiniStatement(accountNumber, 101);
+            this.displayMiniStatement(accountNumber);
         }
 
-        public void displayMiniStatement(int accountNumber, int pin) {
+        public void displayMiniStatement(int... information) {
+            int accountNumber = information[0];
+            int pin = information.length == 2 ? information[1] : 0;
+
+            if (information.length == 2 && pin != this.getPinNumber(accountNumber)) {
+                System.out.println("Invalid Pin Number");
+                return;
+            }
+
             System.out.println("\n------------------\n");
 
             System.out.println("\nAccount Number : " + accountNumber);
@@ -442,7 +469,7 @@ public class Veno_MSc {
     }
 
     public static void main(String[] args) {
-        ATM atm = new ATM();
+        ATMMachine atm = new ATMMachine();
         Customer customer = new Customer();
 
         Scanner scanner = new Scanner(System.in);
@@ -485,7 +512,7 @@ public class Veno_MSc {
 
                         while (processChoice != 5) {
                             System.out.print(
-                                    "\n MENU\n 1) CHECK BALANCE\n 2) WITHDRAW MONEY\n 3) TRANSFER MONEY\n 4) MINI STATEMENT\n 5) EXIT\n Select Your Choice :) ");
+                                    "\n MENU\n 1) CHECK BALANCE\n 2) WITHDRAW MONEY\n 3) TRANSFER MONEY\n 4) MINI STATEMENT\n 5) LOGOUT OR EXIT\n Select Your Choice :) ");
                             processChoice = scanner.nextInt();
 
                             switch (processChoice) {
@@ -522,7 +549,7 @@ public class Veno_MSc {
                                 case 4:
                                     System.out.println("\n\t\tWe Are about to View Mini Statement");
 
-                                    System.out.print("\nPlease Enter  Account Number : ");
+                                    System.out.print("\n Please Enter Account Number : ");
                                     int miniStatementAccountNumber = scanner.nextInt();
 
                                     System.out.print("Please Enter Your Pin Number : ");
